@@ -49,6 +49,11 @@
 	function ts_found(o){
 		tsdata.push(o);
 	}
+	function unQuote(s){
+		var r;
+		eval("r = "+s);
+		return r;
+	}
 }
 start
   = __ program:Program __ 
@@ -194,7 +199,7 @@ Literal
   / value:StringLiteral {
       return {
         type:  "StringLiteral",
-        value: value,
+        value: unQuote(text()),
         offset: offset(),
         end: peg$currPos
       };

@@ -156,7 +156,7 @@ module.exports = (function() {
         peg$c111 = function(value) {
               return {
                 type:  "StringLiteral",
-                value: value,
+                value: unQuote(text()),
                 offset: offset(),
                 end: peg$currPos
               };
@@ -14999,6 +14999,11 @@ module.exports = (function() {
     	var tsdata = [];
     	function ts_found(o){
     		tsdata.push(o);
+    	}
+    	function unQuote(s){
+    		var r;
+    		eval("r = "+s);
+    		return r;
     	}
 
 

@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/liujingbreak/ts-l12n-poc"
+    "url": "https://github.com/liujingbreak/ts-l12n"
   },
   "keywords": [
     "l12n"
@@ -16,6 +16,6 @@
   "author": "Liu Jing",
   "license": "BSD-2-Clause",
   "bugs": {
-    "url": "https://github.com/liujingbreak/ts-l12n-poc/issues"
+    "url": "https://github.com/liujingbreak/ts-l12n/issues"
   }
 }

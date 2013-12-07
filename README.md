@@ -11,7 +11,6 @@ urglify and less, run at compilation time.
 
 ## Process
 
-
 ### Raw Source Code
 
 * Raw HTML files: *.html (e.g. `index.html`, `XXX-template.html`)

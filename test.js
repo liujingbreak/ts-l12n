@@ -1,4 +1,12 @@
 var main = require('./index.js');
 
+var arg = process.argv[2];
 
-main.testParse();
+switch (arg){
+case "scan":
+	main.scan();
+	break;
+case "replace":
+	main.replace();
+	
+}

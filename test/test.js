@@ -1,145 +1,70 @@
-publicProfile.factory('helpers', ['$timeout', '$q', function($timeout, $q) {
+// Fit a string to a fixed container size, by shrinking the font-size until it fits exactly
+publicProfile.directive('fittext', ['$timeout', function($timeout) {
   'use strict';
 
-  var helpers = {
-
-    // Get company account id of currently logged in user
-    getLoggedInCompanyAccountId: function(){
-      var companyAccountId;
-      try {
-        companyAccountId = window.parent.document.getElementsByName('Tradeshift-TenantId')[0].content;
-      }catch(err){
-        console.log("Using hardcoded company acccount id");
-        companyAccountId = "ee1ee9ea-b8d5-4e1f-8069-edb940d9f42b";
-      }
-
-      return companyAccountId;
+  return {
+    scope: {
+      minFontSize: '@',
+      maxFontSize: '@',
+      text: '='
     },
+    restrict: 'C',
+    transclude: true,
+    template: '<div ng-transclude class="textContainer t" ng-bind="text">JUST FOR TEST 1 </div>' +
+    	"more string  "
+    	+ ' <span class="t"> JUST FOR ' 
+    	+ 'TEST 2</span> '
+    	+ nothing + " <span class=\"t\"> JUST FOR TEST 3 </span> "
+    	,
+    controller: function($scope, $element, $attrs) {
+      var maxFontSize = $scope.maxFontSize || 50;
+      var minFontSize = $scope.minFontSize || 8;
 
-    // get company account id of the company being viewed right now
-    getViewedCompanyAccountId: function(){
-      var companyId = this.getParameterByName('companyId');
-      if(companyId === "" || companyId === undefined ){
-        companyId = this.getLoggedInCompanyAccountId();
-      }
-      return companyId;
-    },
+      // text container
+      var textContainer = $element[0].querySelector('.textContainer');
 
-    // determine if the currently logged in user is the owner of the currently viewed profile
-    isOwner: function(){
-      return this.getViewedCompanyAccountId() === this.getLoggedInCompanyAccountId();
-    },
+      // max dimensions for text container
+      var maxHeight = $element[0].offsetHeight;
+      var maxWidth = $element[0].offsetWidth;
 
-    getParameterByName: function(name) {
-        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
-        var results = regex.exec(location.search);
-        return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
-    },
+      var textContainerHeight;
+      var textContainerWidth;
+      var fontSize = maxFontSize;
 
-    // Get full address by stitching together
-    getAdressLinesAsString: function(addressLines){
-      if(addressLines === undefined) return;
+      var resizeText = function(){
+        $timeout(function(){
+          // set new font size and determine resulting dimensions
+          textContainer.style.fontSize = fontSize + 'px';
+          textContainerHeight = textContainer.offsetHeight;
+          textContainerWidth = textContainer.offsetWidth;
 
-      var addressLinesAsString = "";
+          if((textContainerHeight > maxHeight || textContainerWidth > maxWidth) && fontSize > minFontSize){
 
-      if(this.getAddressLine(addressLines, "buildingnumber"))
-        addressLinesAsString += this.getAddressLine(addressLines, "buildingnumber") + ' ';
-      if(this.getAddressLine(addressLines, "street"))
-        addressLinesAsString += this.getAddressLine(addressLines, "street") + ' ';
-      if(this.getAddressLine(addressLines, "zip"))
-        addressLinesAsString += this.getAddressLine(addressLines, "zip") + ' ';
-      if(this.getAddressLine(addressLines, "state"))
-        addressLinesAsString += this.getAddressLine(addressLines, "state") + ' ';
-      if(this.getAddressLine(addressLines, "city"))
-        addressLinesAsString += this.getAddressLine(addressLines, "city");
-
-      return addressLinesAsString;
-    },
-
-    // get addressModel
-    getAddressModel: function(addressLines){
-      return {
-        "buildingnumber": this.getAddressLine(addressLines, 'buildingnumber'),
-        "street": this.getAddressLine(addressLines, 'street'),
-        "zip": this.getAddressLine(addressLines, 'zip'),
-        "state": this.getAddressLine(addressLines, 'state'),
-        "city": this.getAddressLine(addressLines, 'city')
+            // shrink font size
+            var ratioHeight = Math.floor(textContainerHeight / maxHeight);
+            var ratioWidth = Math.floor(textContainerWidth / maxWidth);
+            var shrinkFactor = ratioHeight > ratioWidth ? ratioHeight : ratioWidth;
+            fontSize -= shrinkFactor;
+            // console.log("fontSize", fontSize);
+            resizeText();
+          }else{
+            textContainer.style.visibility = "visible";
+          }
+        }, 0);
       };
-    },
 
-    // Get specific address line
-    getAddressLine: function(addressLines, addressLineScheme){
-      var filteredResults = addressLines.filter(function(addressLine){
-        return addressLine.scheme === addressLineScheme;
-      });
+      // watch for changes to text
+      $scope.$watch('text', function(newText, oldText){
+        if(newText === undefined) return;
 
-      if(filteredResults[0]){
-        // dirty hack: the backend doesn't allow empty strings but we can't force the user to supply an address
-        if(filteredResults[0].value === "unset"){
-          return "";
-        }else{
-          return filteredResults[0].value;
+        // text was deleted
+        if(oldText !== undefined && newText.length < oldText.length){
+          fontSize = maxFontSize;
+          // console.log("Letter was deleted");
         }
-      }else{
-        return null;
-      }
-    },
-
-    // build address line structure for the backend to understand
-    getAddressLines: function(addressModel){
-      return [
-        {
-          "scheme": "street",
-          "value": addressModel.street || "unset"
-        },
-        {
-          "scheme": "buildingnumber",
-          "value": addressModel.buildingnumber || "unset"
-        },
-        {
-          "scheme": "zip",
-          "value": addressModel.zip || "unset"
-        },
-        {
-          "scheme": "state",
-          "value": addressModel.state || "unset"
-        },
-        {
-          "scheme": "city",
-          "value": addressModel.city || "unset"
-        }
-      ];
-    },
-
-    toggleElementHeight: function(target, showElement){
-      // calculate initial height
-      this.clientHeight = this.clientHeight || target.clientHeight;
-
-      // change height - use timeout to add delay, so that the css class has been added to the DOM
-      var timeoutFunction = $timeout(function() {
-        target.style.height = showElement ? target.scrollHeight + 'px' : this.clientHeight + 'px';
-      }.bind(this), 0);
-    },
-
-    getUuid: function(){
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-          return v.toString(16);
+        textContainer.style.visibility = "hidden";
+        resizeText();
       });
-    },
-
-    // close one or all asides
-    closeAside: function(asideName){
-      var asideClassName = asideName !== undefined ? "." + asideName : "";
-      var openSidebars = document.querySelectorAll(".ts-aside" + asideClassName + '[gui\\.open="true"]');
-      for (var i=0; i < openSidebars.length; i++) {
-          // console.log("Close aside", openSidebars[i]);
-          openSidebars[i].setAttribute("gui.open","false");
-      }
-      return openSidebars[openSidebars.length-1]; // return last (top most) aside
     }
-
   };
-
-  return helpers;
 }]);
