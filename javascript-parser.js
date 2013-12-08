@@ -158,7 +158,8 @@ module.exports = (function() {
                 type:  "StringLiteral",
                 value: unQuote(text()),
                 offset: offset(),
-                end: peg$currPos
+                end: peg$currPos,
+                line: line()
               };
             },
         peg$c112 = function() { return { type: "NullLiteral" }; },

@@ -1,0 +1,18 @@
+{
+  "srcFile": "./test/test.js",
+  "result": [
+    {
+      "text": "<div ng-transclude class=\"textContainer t\" ng-bind=\"text\">JUST FOR TEST 1 </div>more string   <span class=\"t\"> JUST FOR TEST 2</span> ",
+      "line": 13,
+      "column": 15,
+      "offset": 328,
+      "end": 495
+    },
+    {
+      "text": " <span class=\"t\"> JUST FOR TEST 3 </span> ",
+      "line": 17,
+      "offset": 513,
+      "end": 559
+    }
+  ]
+}

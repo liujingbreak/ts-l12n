@@ -1,0 +1,27 @@
+{
+  "file": "./test/test.js",
+  "result": [
+    {
+      "tag": "span",
+      "offset": 17,
+      "end": 34,
+      "line": 17,
+      "text": " JUST FOR TEST 3 "
+    },
+    {
+      "tag": "div",
+      "offset": 58,
+      "end": 74,
+      "line": 13,
+      "text": "JUST FOR TEST 1 "
+    },
+    {
+      "tag": "span",
+      "offset": 110,
+      "end": 126,
+      "line": 13,
+      "text": " JUST FOR TEST 2"
+    }
+  ],
+  "srcFile": "./temp/test.js-jslit.json"
+}

@@ -201,7 +201,8 @@ Literal
         type:  "StringLiteral",
         value: unQuote(text()),
         offset: offset(),
-        end: peg$currPos
+        end: peg$currPos,
+        line: line()
       };
     }
   / RegularExpressionLiteral

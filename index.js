@@ -15,22 +15,6 @@ function _apply(dist, src){
 	}
 }
 
-function scanHtml(filepath){
-	return new Promise(function(resolve, reject){
-		stutil.readFile(filepath,
-			function(input){
-				try{
-					var r = hparser.parse(input);
-					resolve({parsed: r, raw: input});
-				}catch(e){
-					reject(e);
-				}
-			}
-		);
-	});
-}
-
-
 function scanJs(filepath){
 	return new Promise(function(resolve, reject){
 		stutil.readFile(filepath,
@@ -47,7 +31,7 @@ function scanJs(filepath){
 							//console.log("******* " + JSON.stringify(el, null, "  "));
 							var stringLit = el.text;
 							//console.log(stringLit);
-							inScan.scanHtmlTree(filepath, hparser.parse(stringLit), stringLit);
+							inScan.parseHtmlTree(filepath, hparser.parse(stringLit), stringLit);
 							//console.log(inScan.output);
 							var res = inScan.output.result;
 							if(res && res.length > 0){
@@ -66,7 +50,7 @@ function scanJs(filepath){
 					//console.log(rr);
 					resolve({
 							temp: { file: filepath, result: r0},
-							translatable:{file: filepath, result:rr, tempFile: "./temp/"+ tmpfname}
+							trans:{file: filepath, result:rr, tempFile: "./temp/"+ tmpfname}
 					});
 				}catch(e){
 					reject(e);
@@ -77,17 +61,77 @@ function scanJs(filepath){
 }
 
 
-
-
-/** @class Scanner */
-function Scanner(){
-	this.output = {};
+function setupConfig(config){
+	if(config.trans && !fs.existsSync(config.trans))
+		fs.mkdirSync(config.trans);
+	if(config.temp && !fs.existsSync(config.temp))
+		fs.mkdirSync(config.temp);
+	if(config.dist && !fs.existsSync(config.dist))
+		fs.mkdirSync(config.dist);
 	
 }
-_apply(Scanner.prototype, {
+
+function sortParsedData(jsonData){
+	return jsonData.sort(function(a, b){
+			return a.offset - b.offset;
+		});
+}
+
+/** @class Scanner */
+function HtmlScanner(config){
+	this.output = {};
+	this.cfg = config; // folder setting
+	this.parser = hparser;
+	//console.trace(config);
+}
+HtmlScanner.prototype.constructor = HtmlScanner;
+_apply(HtmlScanner.prototype, {
+	scanSingle:function(file){
+		var self = this; 
+		//console.log(self._parse);
+		//console.log(self._parseTree);
+		this._parse(file).then(function(r){
+			//console.log(JSON.stringify(r, null, "  "));
+			return self._parseTree(file, r.parsed, r.raw);
+		})
+		.then(function(r){
+			return self._trans(file, self.output);
+		})
+		.done(null, function(e){
+			console.log(e);
+			throw e;
+		});
+	},
+	_parse:function(filepath){
+		var self = this;
+		return new Promise(function(resolve, reject){
+		stutil.readFile(filepath,
+			function(input){
+				try{
+					//console.log(input);
+					var r = sortParsedData(self.parser.parse(input));
+					resolve({parsed: r, raw: input});
+				}catch(e){
+					reject(e);
+				}
+			}
+		);
+		});
+	},
+	_parseTree:function(filepath, pr, text){
+		this.currFile = {};
+		this.output = this.currFile;
+		this.currFile.file = this.currFile.srcFile = filepath;
+		this.currFile.result = [];
+		this.findClassT(pr, text);
+	},
+	_trans:function(file, meta){
+		var trans = new TransFileGenerator(this.cfg.trans);
+		return trans.writeTranslable(stutil.fileName(file), meta);
+	},
 	/**@param pr parsed result
 	*/
-	findClassT: function (pr){
+	findClassT: function (pr, rawText){
 		var len = pr.length;
 		var res = this.currFile.result;
 		var self = this;
@@ -106,7 +150,7 @@ _apply(Scanner.prototype, {
 								offset: el.innerOffset, 
 								end: el.innerEnd,
 								line: el.line,
-								text: self.text.substring(el.innerOffset, el.innerEnd)
+								text: rawText.substring(el.innerOffset, el.innerEnd)
 							});
 						}else if(el.$ == "(T_T)"){
 							// I take next text element as text
@@ -124,25 +168,55 @@ _apply(Scanner.prototype, {
 					}
 				}
 				if(el.value){
-					self.findClassT(el.value);
+					self.findClassT(el.value, rawText);
 				}
 			}
 			
 		});
-	},
+	}
 	
-	scanHtmlTree: function(filepath, pr, text){
-		this.currFile = {};
+});
+
+function JsScanner(config){
+	JsScanner._super.constructor.call(this, config);
+	this.parser = jsparser;
+};
+JsScanner._super = HtmlScanner.prototype;
+JsScanner.prototype = Object.create(HtmlScanner.prototype);
+_apply(JsScanner.prototype, {
+	_parseTree:function(file, langTree, raw){
+		var transData = [], tempData = []; // filtered lang tree
+		langTree.forEach(function(el, i){
+				//console.log("******* " + JSON.stringify(el, null, "  "));
+				var stringLit = el.text;
+				//console.log(stringLit);
+				var htmlScan = new HtmlScanner();
+				 htmlScan._parseTree(file, hparser.parse(stringLit), stringLit);
+				//console.log(inScan.output);
+				var res = htmlScan.output.result;
+				if(res && res.length > 0){
+					res.forEach(function( el2, i){
+						transData.push(el2);
+						//el2.offset += el.offset+1 ; // +1 for counting quote symbol
+						//el2.end += el.offset;
+						el2.line += el.line -1;
+					});
+					tempData.push(el);
+				}
+		});
+		
+		var trans = new TransFileGenerator(this.cfg.temp);
+		trans.writeTranslable(this._tempFilename(file), {srcFile:file, result:tempData});
+		
+		this.currFile = {
+				file: file,
+				result:transData,
+				srcFile: this.cfg.temp + '/'+ this._tempFilename(file) + ".json"
+			};
 		this.output = this.currFile;
-		this.currFile.file = filepath;
-		this.currFile.result = [];
-		this.text = text;
-		this.findClassT(pr);
-		/*
-			[
-				{file: filepath, result: [ { text:, offset:, ...},... ] }
-			]
-		*/
+	},
+	_tempFilename: function(srcfile){
+		return replacer.fileName(srcfile) + "-jslit";
 	}
 });
 
@@ -157,17 +231,11 @@ function TransFileGenerator(transFolder){
 	this.folder = transFolder;
 }
 _apply(TransFileGenerator.prototype,{
-	_sort:function(jsonData){
-		var sorted = jsonData.result.sort(function(a, b){
-			return a.offset - b.offset;
-		});
-		return sorted;
-	},
 	
 	writeTranslable: function(filename, jsonData){
-		var d = this._sort(jsonData);
-		jsonData.result = d;
+		//jsonData.result = jsonData;
 		replacer.writeFile(this.folder + '/'+ filename+".json" , JSON.stringify(jsonData, null, "  "));
+		return jsonData;
 	},
 	
 	readTranslated: function(filepath){
@@ -208,15 +276,38 @@ function handleError(e){
 			throw e;
 		}
 return {
-	
-	scan: function(){
+	scanSingle:function(filepath, config){
+		Promise.from(setupConfig(config))
+		.done(function(){
+				
+				if(filepath.endsWith('.html')){
+					var scan = new HtmlScanner(config);
+					scan.scanSingle(filepath);
+				}
+				else if(filepath.endsWith('.js')){
+					var scan = new JsScanner(config);
+					scan.scanSingle(filepath);
+				}
+				
+		}, function(e){
+			console.log(e);
+			throw e;
+		});
+		
+	},
+	replaceSingle:function(filepath, config){
+		Promise.from(setupConfig(config)).done(function(){
+		replacer.replace(config.dist, filepath);
+		});
+	},
+	scan: function(file){
 		var jsfile = 'test.js';
 		var htmlfile = 'test.html';
 		var srcFolder = "./test/";
 		var scan = new Scanner();
-		var trans = new TransFileGenerator("./translatable");
+		var trans = new TransFileGenerator("./trans");
 		var transTemp = new TransFileGenerator("./temp");
-		mkdir("./translatable").then(function(){
+		mkdir("./trans").then(function(){
 			return mkdir("./dist");
 		})
 		.then(function(){
@@ -235,17 +326,17 @@ return {
 			} , handleError
 		)
 		.done(function(r){
-			var psJs = JSON.stringify(r.translatable, null, '  ');
+			var psJs = JSON.stringify(r.trans, null, '  ');
 			transTemp.writeTranslable(jsfile, r.temp);
 			console.log("-----JS file meta data: -----\n"+ psJs);
-			trans.writeTranslable(jsfile, r.translatable);
+			trans.writeTranslable(jsfile, r.trans);
 			console.log("----- end of test ------");
 		}, handleError);
 	},
 	
 	replace:function(folder){
 		if(!folder)
-			folder = "./translatable";
+			folder = "./trans";
 		mkdir("./dist").then(function(){
 			return mkdir("./dist");
 		}).then(function(){
@@ -270,7 +361,9 @@ return {
 			throw e;
 		});
 		
-	}
+	},
+	
+	setup: setupConfig
 };
 
 })();
