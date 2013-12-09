@@ -58,6 +58,39 @@ module.exports = (function(){
 		});
 	}
 	
+	function replaceJs(distFolder, transFile){
+		stutil.readFile(transFile, function(trans){
+			var transdata = JSON.parse(trans);
+			stutil.readFile(transdata.srcFile, function(jsLitMetaStr){
+				var jsLitMeta = JSON.parse(jsLitMetaStr);
+				var _transdata = orgTranDataByJsIndex(transdata, jsLitMeta);
+				jsLitMeta.result.forEach(function(el, i){
+						el.text = _repText(el.text, _transdata[i]);
+				});
+				console.log(JSON.stringify(jsLitMeta, null, "  "));
+				var dist = null;
+				repFile(jsLitMeta.srcFile, jsLitMeta.result).then(
+					function(disttext){
+						writeFile(distFolder + "/"+ fileName(jsLitMeta.srcFile), disttext);
+					});
+			});
+			
+			
+		});
+	}
+	
+	function orgTranDataByJsIndex(transdata, jsLitMeta){
+//		debugger;
+		var ret = new Array(jsLitMeta.length);
+		transdata.result.forEach(function(el, i){
+				var j = el.jslit_idx;
+				if(!ret[j])
+					ret[j] = [];
+				ret[j].push(el);
+		});
+		return ret;
+	}
+	
 	function abort(message) {
 		util.error(message);
 		process.exit(1);
@@ -77,6 +110,8 @@ module.exports = (function(){
 		replace: function(distFolder, transFile){
 			if(transFile.endsWith('.html.json')){
 				replaceHtml(distFolder, transFile);
+			}else if(transFile.endsWith('.js.json')){
+				replaceJs(distFolder, transFile);
 			}
 		},
 		

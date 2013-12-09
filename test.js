@@ -11,18 +11,19 @@ case "replace":
 	main.replace();
 	break;
 case "scan-1":
-	main.scanSingle("./test/test.html", {
+	main.scanSingle("./test/test.js", {
 		temp: "./temp",
 		dist: "./dist",
 		trans: "./translate"
 	});
 	break;
 case "replace-1":
-	main.replaceSingle(arg[1], {
+	main.replaceSingle("./translate/test.js.json", {
 		temp: "./temp",
 		dist: "./dist",
 		trans: "./translate"
 	});
+	break;
 	default:
 		console.log("unknown argument "+ arg[0]);
 }

@@ -194,9 +194,11 @@ _apply(JsScanner.prototype, {
 				 htmlScan._parseTree(file, hparser.parse(stringLit), stringLit);
 				//console.log(inScan.output);
 				var res = htmlScan.output.result;
+				var tempDataIdx = tempData.length;
 				if(res && res.length > 0){
 					res.forEach(function( el2, i){
 						transData.push(el2);
+						el2.jslit_idx = tempDataIdx;
 						//el2.offset += el.offset+1 ; // +1 for counting quote symbol
 						//el2.end += el.offset;
 						el2.line += el.line -1;
@@ -297,7 +299,9 @@ return {
 	},
 	replaceSingle:function(filepath, config){
 		Promise.from(setupConfig(config)).done(function(){
-		replacer.replace(config.dist, filepath);
+				replacer.replace(config.dist, filepath);
+		}, function(e){
+			console.log(e);
 		});
 	},
 	scan: function(file){
