@@ -168,7 +168,7 @@ And the replaced file will be:
    Check out bin.js, a very simple configuration.
    
 
-## This is just a small PoC,  I guess an ideal tools should have functionality likes
+## This is just a small PoC,  I guess an ideal tool should have functionality likes
  * Integrate with Crowdin or TS 2.5 tranlation App, or exchange files with them.
 
  * If we don't use RequireJS, Replace html tag <script src="xxx.js"></script> and <link href="xxx.css"> with appending random query hash code to the URL,
