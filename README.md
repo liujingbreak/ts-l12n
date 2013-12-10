@@ -61,8 +61,9 @@ For example,
 	```
 
 	- Having Javascript file 
+	
 	```js
-		directive('fittext', [ function($timeout) {
+	directive('fittext', [ function($timeout) {
 	  ...
 	  return {
 		scope: {
@@ -151,12 +152,12 @@ For example,
     ...
 ```
 ## How to run a demo
-	- Step 1,  run ` node bin.js scan test`
+	* Step 1,  run `node bin.js scan test`
 	  Scanner will scan test files in `test` folder, generate folders `translate` and `temp`
 	  
-	- Step 2, manully edit json files in `translate` folder, image you are acting an Translate App :)
+	* Step 2, manully edit json files in `translate` folder, image you are acting an Translate App :)
 	
-	- Step 3, run `node bin.js replace`
+	* Step 3, run `node bin.js replace`
 	  Now, check out the files in `dist` folder.
 	  
 	  Check out bin.js,  very simple configuration is inside it.
@@ -176,8 +177,8 @@ For example,
 	* A lot...
 	
 ## What shouldn't be supported by a Server side i18n tool,
-	- Dynamic element creation, dynamic element class name adding, only client side knows when you add a a class name like "t".
+	* Dynamic element creation, dynamic element class name adding, only client side knows when you add a a class name like "t".
 	
-	- Tell you later...
+	* Let us think ...
 	
 	
