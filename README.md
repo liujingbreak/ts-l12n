@@ -171,16 +171,16 @@ And the replaced file will be:
 ## This is just a small PoC,  I guess an ideal tool should have functionality likes
  * Integrate with Crowdin or TS 2.5 tranlation App, or exchange files with them.
 
- * If we don't use RequireJS, Replace html tag <script src="xxx.js"></script> and <link href="xxx.css"> with appending random query hash code to the URL,
-   which can disable browser's cache everytime new js file released, like <script src="xxx.js?921039218"></script>
+ * No requireJS used? Replace html tag `<script src="xxx.js"></script>` and `<link href="xxx.css">` with appending random query hash code to the URL,
+   which can disable browser's cache everytime new js file released, like `<script src="xxx.js?921039218"></script>`
  
- * Supporting static text in html element attributes like what TS 2.5 does.
+ * Supporting static text in html element attribute like what TS 2.5 does.
  
  * Replacing templateUrl value in AngluarJS directive definition.
  
- * Configuration, conditional scan javascript file, performance tuning for parser.
+ * Configuration, conditionally scan javascript file.
  
- * A summary report...
+ * A pretty report...
  
 ## What shouldn't be supported by a Server side i18n tool
  * Dynamic element creation, dynamic element class name adding, only client side knows when you add a a class name like "t".
