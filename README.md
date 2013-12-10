@@ -1,18 +1,21 @@
-PoC of AngularJS based text resource Translation toolkit
+PoC of AngularJS based i18n text resource tool
 --------------
 
-This PoC is a PoC of server side i18n text resource solution
+This PoC is for server side i18n text resource solution.
+Focusing on proove feasibility of making a smart tool for Text parsing, fetching, replacing, translation at compilation time.
 
 ## In general
 
 Written in javascript based on Node.js, it is better to be packed as a Grunt task along with other Grunt tasks like
-urglify and less, run at compilation time or as a git hook.
+urglify, run at compilation time or as a git hook.
+
 This Poc only demostrates how server side can do text replacement job.
 
 ## Basic Idea
 
  * Run `the tool` to
- scan and fetch `i18n text` from HTML files ( including AngularJS template HTML files) and Javascript inline template in form as String literals, save in `translate` folder.
+ scan and fetch `i18n text` from HTML files ( including AngularJS template HTML files) and Javascript inline template in form as String literals, 
+ save in `translate` folder along with other information like line number, file location, offset ...
 
  * Translate tool (Crowdin or TS 2.5 Translate App) picks up text information from `translate` folder, interpreter crew do translation job, deploy translated resource to `translate` folder.
 
@@ -79,7 +82,7 @@ For example,
 			...
 	```
 	Scanner leverages Javascript parser (in PoC, I use PEGJS) to parse javascript file, filters out `String literal`,
-	again HTML parser wiil scan those `String literal` and looks for HTML like string which contains HTML elment,
+	again HTML parser wiil scan those `String literal` and looks for HTML like string which contains special HTML elment,
 	generates translatable json file:
 	
 	```js
@@ -152,33 +155,33 @@ For example,
     ...
 ```
 ## How to run a demo
-	* Step 1,  run `node bin.js scan test`
-	  Scanner will scan test files in `test` folder, generate folders `translate` and `temp`
-	  
-	* Step 2, manully edit json files in `translate` folder, image you are acting an Translate App :)
-	
-	* Step 3, run `node bin.js replace`
-	  Now, check out the files in `dist` folder.
-	  
-	  Check out bin.js,  very simple configuration is inside it.
-	  
+ * Step 1,  run `node bin.js scan test`
+   Scanner will scan test files in `test` folder, generate folders `translate` and `temp`
+   
+ * Step 2, manully edit json files in `translate` folder, image you are acting an Translate App :)
+ 
+ * Step 3, run `node bin.js replace`
+   Now, check out the files in `dist` folder.
+   
+   Check out bin.js, a very simple configuration.
+   
 
 ## This is just a small PoC,  I guess an ideal tools should have functionality likes
 
-	* If we don't use RequireJS, Replace html tag <script src="xxx.js"></script> with an random query hash code,
-	which can disable Browser cache everytime new js file released, like <script src="xxx.js?921039218"></script>
-	
-	* Supporting static text in html element attributes like what TS 2.5 does.
-	
-	* Replacing templateUrl value in AngluarJS directive definition.
-	
-	* Configuration, conditional scan javascript file, performance tuning for parser.
-	
-	* A lot...
-	
+ * If we don't use RequireJS, Replace html tag <script src="xxx.js"></script> with an random query hash code,
+   which can disable Browser cache everytime new js file released, like <script src="xxx.js?921039218"></script>
+ 
+ * Supporting static text in html element attributes like what TS 2.5 does.
+ 
+ * Replacing templateUrl value in AngluarJS directive definition.
+ 
+ * Configuration, conditional scan javascript file, performance tuning for parser.
+ 
+ * A summary report...
+ 
 ## What shouldn't be supported by a Server side i18n tool,
-	* Dynamic element creation, dynamic element class name adding, only client side knows when you add a a class name like "t".
-	
-	* Let us think ...
+ * Dynamic element creation, dynamic element class name adding, only client side knows when you add a a class name like "t".
+ 
+ * Let us think ...
 	
 	
