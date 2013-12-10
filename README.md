@@ -17,7 +17,7 @@ This Poc only demostrates how server side can do text replacement job.
  scan and fetch `i18n text` from HTML files ( including AngularJS template HTML files) and Javascript inline template in form as String literals, 
  save in `translate` folder along with other information like line number, file location, offset ...
 
- * Translate tool (Crowdin or TS 2.5 Translate App) picks up text information from `translate` folder, interpreter crew do translation job, deploy translated resource to `translate` folder.
+ * Translate tool (Crowdin or TS 2.5 Translation App) picks up text information from `translate` folder, interpreter crew do translation job, deploy translated resource to `translate` folder.
 
  * Run `the tool` to read translated resource, then replace all `i18n text` in HTML and Javascript files with those translated strings, save to `dist` folder.
 
@@ -82,7 +82,7 @@ For example,
 			...
 	```
 	Scanner leverages Javascript parser (in PoC, I use PEGJS) to parse javascript file, filters out `String literal`,
-	again HTML parser wiil scan those `String literal` and looks for HTML like string which contains special HTML elment,
+	again, HTML parser will scan those `String literal` and looks for HTML-like string which contains special HTML elment,
 	generates translatable json file:
 	
 	```js
@@ -118,7 +118,7 @@ For example,
 	}
 	```
 	
- - Manually replace those "text" with different language, here we pretent this is done by a Translate App.
+ - Manually replace those "text" with different language, here we assume this is done by a Translation App.
   The final replaced files will be like:
 ```
 <div class="actions">
@@ -140,6 +140,8 @@ For example,
         ...
 ```
 
+And the replaced file will be:
+
 ```js
 ...
   return {
@@ -158,7 +160,7 @@ For example,
  * Step 1,  run `node bin.js scan test`
    Scanner will scan test files in `test` folder, generate folders `translate` and `temp`
    
- * Step 2, manully edit json files in `translate` folder, image you are acting an Translate App :)
+ * Step 2, manully edit json files in `translate` folder, image you are acting an Translation App :)
  
  * Step 3, run `node bin.js replace`
    Now, check out the files in `dist` folder.
@@ -167,9 +169,10 @@ For example,
    
 
 ## This is just a small PoC,  I guess an ideal tools should have functionality likes
+ * Integrate with Crowdin or TS 2.5 tranlation App, or exchange files with them.
 
- * If we don't use RequireJS, Replace html tag <script src="xxx.js"></script> with an random query hash code,
-   which can disable Browser cache everytime new js file released, like <script src="xxx.js?921039218"></script>
+ * If we don't use RequireJS, Replace html tag <script src="xxx.js"></script> and <link href="xxx.css"> with appending random query hash code to the URL,
+   which can disable browser's cache everytime new js file released, like <script src="xxx.js?921039218"></script>
  
  * Supporting static text in html element attributes like what TS 2.5 does.
  
@@ -179,7 +182,7 @@ For example,
  
  * A summary report...
  
-## What shouldn't be supported by a Server side i18n tool,
+## What shouldn't be supported by a Server side i18n tool
  * Dynamic element creation, dynamic element class name adding, only client side knows when you add a a class name like "t".
  
  * Let us think ...
