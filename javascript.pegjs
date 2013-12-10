@@ -47,6 +47,7 @@
 {
 	var tsdata = [];
 	function ts_found(o){
+		//console.log( o);
 		tsdata.push(o);
 	}
 	function unQuote(s){
@@ -197,6 +198,7 @@ Literal
       };
     }
   / value:StringLiteral {
+  	//console.log("in parser "+ text());
       return {
         type:  "StringLiteral",
         value: unQuote(text()),
@@ -760,7 +762,7 @@ AdditiveExpression
       			text: head.value,
       			line:line(),
       			column: column(),
-      			offset: offset(),
+      			offset: offset() ,
       			end:  head.end
       			
       		};
@@ -782,8 +784,10 @@ AdditiveExpression
 						ts.end = el[3].end;
 					}
       				}else{
-      					ts_found(ts);
+      					if(ts)
+      						ts_found(ts);
       					ts = null;
+      					
       				}
 			});
 		 }

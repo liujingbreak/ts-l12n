@@ -2,7 +2,7 @@
   "name": "ts_i18n_tool",
   "version": "0.1.0",
   "description": "PoC of static resource translation tool for Public Profile",
-  "main": "index.js",
+  "main": "scanner.js",
   "scripts": {
     "test": "grunt nodeunit"
   },

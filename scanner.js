@@ -7,57 +7,13 @@ var hparser = require("./html-parser.js");
 var jsparser = require("./javascript-parser.js");
 var Promise = require('promise');
 var replacer = require("./replacer.js");
+var ph = require("path");
 
 
 function _apply(dist, src){
 	for( var f in src){
 		dist[f] = src[f];
 	}
-}
-
-function scanJs(filepath){
-	return new Promise(function(resolve, reject){
-		stutil.readFile(filepath,
-			function(input){
-				try{
-					var inScan = new Scanner();
-					//console.log(" "+ input);
-					var r = jsparser.parse(input);
-					var rr = [], r0 = [];
-					if(!fs.existsSync("./temp"))
-						fs.mkdirSync("./temp");
-					
-					r.forEach(function(el, i){
-							//console.log("******* " + JSON.stringify(el, null, "  "));
-							var stringLit = el.text;
-							//console.log(stringLit);
-							inScan.parseHtmlTree(filepath, hparser.parse(stringLit), stringLit);
-							//console.log(inScan.output);
-							var res = inScan.output.result;
-							if(res && res.length > 0){
-								res.forEach(function( el2, i){
-									rr.push(el2);
-									//el2.offset += el.offset+1 ; // +1 for counting quote symbol
-									//el2.end += el.offset;
-									el2.line += el.line -1;
-								});
-								r0.push(el);
-							}
-					});
-					var tmpfname = replacer.fileName(filepath);
-					//replacer.writeFile("./temp/" + replacer.fileName(filepath) + ".strLiteral", 
-					//		JSON.stringify(r0, null, "  " ));
-					//console.log(rr);
-					resolve({
-							temp: { file: filepath, result: r0},
-							trans:{file: filepath, result:rr, tempFile: "./temp/"+ tmpfname}
-					});
-				}catch(e){
-					reject(e);
-				}
-			}
-		);
-	});
 }
 
 
@@ -72,10 +28,85 @@ function setupConfig(config){
 }
 
 function sortParsedData(jsonData){
+	//console.log(JSON.stringify(jsonData, null, " "));
 	return jsonData.sort(function(a, b){
+			try{
 			return a.offset - b.offset;
+			}catch(e){
+				//debugger;
+				throw e;
+			}
 		});
 }
+
+function Reporter(){
+	this.scanCount = 0;
+	this.fileCount = 0;
+	this.jsFileCount = 0;
+	this.htmlFileCount = 0;
+	this.textCntPerFile = 0;
+	this.textCount = 0;
+	this._js = false;
+}
+Reporter.prototype = {
+	begin:function(){
+		var d = new Date();
+		this._reportFile = 
+		"scan_report"+  "_" + d.getFullYear() +"-"+ (d.getMonth() + 1) + "-" + d.getDate() +
+			" "+ d.getHours()+ ":"+ d.getMinutes() + ":" + d.getSeconds() + '.'+d.getMilliseconds() + ".txt";
+		
+	},
+	fileScanStart:function(filepath){
+		this.currFile = filepath;
+		this.textCntPerFile = 0;
+		this._txtfndPerFile = [];
+		this.scanCount ++;
+		this._js = ph.extname(filepath).toLowerCase() == ".js";
+		
+	},
+	fileScanStop: function(bI18n, textEntries){
+		var self = this;
+		this.scanCount ++;
+		if(! bI18n)
+			return;
+		this.fileCount ++;
+		if(this._js)
+			this.jsFileCount++;
+		
+		if(textEntries){
+			this.textCntPerFile += textEntries.length;
+			this.textCount += textEntries.length;
+			this._txtfndPerFile = textEntries;
+		}
+		self._writeln("\n--------------------------\n");
+		this._writeln("file: "+ this.currFile+ "\t Text label found: "+ this.textCntPerFile);
+		
+		this._txtfndPerFile.forEach(function(el, i){
+				self._writeln("line:"+ el.line + "\t"+ el.text);
+		});
+		
+		
+	},
+	text:function(entry){
+		this.textCntPerFile ++;
+		this.textCount ++;
+		this._txtfndPerFile.push(entry);
+		//console.log(entry);
+	},
+	jsInclude:function(file, srclink){
+	},
+	templateUrl: function(file, srclink){
+	},
+	end:function(){
+		this._writeln("[ Total ] Scanned files:"+ this.scanCount + " Text labels: "+ this.textCount +
+			"  HTML files: "+ this.htmlFileCount +"  JS files: "+this.jsFileCount);
+	},
+	_writeln:function(data){
+		console.log(data);
+		//fs.appendFile(this._reportFile, data+ "\n");
+	}
+};
+var reporter = new Reporter();
 
 /** @class Scanner */
 function HtmlScanner(config){
@@ -87,18 +118,22 @@ function HtmlScanner(config){
 HtmlScanner.prototype.constructor = HtmlScanner;
 _apply(HtmlScanner.prototype, {
 	scanSingle:function(file){
+		console.log("scanning "+ file);
+		reporter.fileScanStart(file);
 		var self = this; 
 		//console.log(self._parse);
 		//console.log(self._parseTree);
-		this._parse(file).then(function(r){
+		return this._parse(file).then(function(r){
 			//console.log(JSON.stringify(r, null, "  "));
 			return self._parseTree(file, r.parsed, r.raw);
 		})
 		.then(function(r){
-			return self._trans(file, self.output);
+			self._trans(file, self.output);
 		})
-		.done(null, function(e){
-			console.log(e);
+		.then(function(){
+				
+		}, function(e){
+			console.log("Scanning failed with "+ e);
 			throw e;
 		});
 	},
@@ -126,8 +161,12 @@ _apply(HtmlScanner.prototype, {
 		this.findClassT(pr, text);
 	},
 	_trans:function(file, meta){
+		reporter.fileScanStop(meta.result.length > 0, meta.result);
+		if(meta.result.length <= 0){
+			return;
+		}
 		var trans = new TransFileGenerator(this.cfg.trans);
-		return trans.writeTranslable(stutil.fileName(file), meta);
+		return trans.writeTranslable(ph.dirname(file).replace(new RegExp(ph.sep, 'g'), '_')  +"-" + stutil.fileName(file), meta);
 	},
 	/**@param pr parsed result
 	*/
@@ -137,6 +176,7 @@ _apply(HtmlScanner.prototype, {
 		var self = this;
 		//console.trace(self);
 		pr.forEach(function(el, i){
+			var entry;
 			if(el.type == "element"){
 				if(el.attrs){
 					if( el.attrs.some(function(attr){
@@ -145,24 +185,29 @@ _apply(HtmlScanner.prototype, {
 					}) ){
 						if( el.value){
 							// nested element, I take the whole inner area as text
-							res.push({
+							entry = {
 								tag: el.element,
 								offset: el.innerOffset, 
 								end: el.innerEnd,
 								line: el.line,
 								text: rawText.substring(el.innerOffset, el.innerEnd)
-							});
+							};
+							res.push(entry);
+							//reporter.text(entry);
 						}else if(el.$ == "(T_T)"){
 							// I take next text element as text
 							var next = pr[i + 1];
-							if(next && next.type == "text")
-								res.push({
+							if(next && next.type == "text"){
+								entry = {
 									tag: el.element,
 									offset: next.offset,
 									line: next.line, 
 									end: next.end,
 									text: next.text
-								});
+								};
+								res.push(entry);
+								//reporter.text(entry);
+							}
 						}
 						
 					}
@@ -180,7 +225,7 @@ _apply(HtmlScanner.prototype, {
 function JsScanner(config){
 	JsScanner._super.constructor.call(this, config);
 	this.parser = jsparser;
-};
+}
 JsScanner._super = HtmlScanner.prototype;
 JsScanner.prototype = Object.create(HtmlScanner.prototype);
 _apply(JsScanner.prototype, {
@@ -188,28 +233,35 @@ _apply(JsScanner.prototype, {
 		var transData = [], tempData = []; // filtered lang tree
 		langTree.forEach(function(el, i){
 				//console.log("******* " + JSON.stringify(el, null, "  "));
-				var stringLit = el.text;
+				var stringLit = el.text, parseFail = false;
 				//console.log(stringLit);
 				var htmlScan = new HtmlScanner();
-				 htmlScan._parseTree(file, hparser.parse(stringLit), stringLit);
+				try{
+					htmlScan._parseTree(file, hparser.parse(stringLit), stringLit);
+				}catch(e){
+					//todo: predicate if e.name is 'SyntaxError' and comes from parser
+					parseFail = true;
+				}
 				//console.log(inScan.output);
 				var res = htmlScan.output.result;
 				var tempDataIdx = tempData.length;
-				if(res && res.length > 0){
+				if(!parseFail && res && res.length > 0){
 					res.forEach(function( el2, i){
 						transData.push(el2);
 						el2.jslit_idx = tempDataIdx;
 						//el2.offset += el.offset+1 ; // +1 for counting quote symbol
 						//el2.end += el.offset;
 						el2.line += el.line -1;
+						//reporter.text(el2);
 					});
 					tempData.push(el);
 				}
 		});
-		
-		var trans = new TransFileGenerator(this.cfg.temp);
-		trans.writeTranslable(this._tempFilename(file), {srcFile:file, result:tempData});
-		
+		if(tempData.length > 0){
+			var trans = new TransFileGenerator(this.cfg.temp);
+			trans.writeTranslable(this._tempFilename(file), {srcFile:file, result:tempData});
+		}
+		//reporter.fileScanStop(tempData.length > 0);
 		this.currFile = {
 				file: file,
 				result:transData,
@@ -218,7 +270,7 @@ _apply(JsScanner.prototype, {
 		this.output = this.currFile;
 	},
 	_tempFilename: function(srcfile){
-		return replacer.fileName(srcfile) + "-jslit";
+		return ph.dirname(srcfile).replace(new RegExp(ph.sep, 'g'), '_') +"-"+ ph.basename(srcfile) + "-jslit";
 	}
 });
 
@@ -226,6 +278,24 @@ function _containsStr(str, name){
 	return str.split(' ').some(function(el){
 		return el == name;
 	});
+}
+
+function unescapeQuote(s){
+	var ret = "";
+	for(var i =0, l = s.length; i< l; i++){
+		var c = s.charAt(i);
+		var next, rep = null;
+		if(c == '\\'){
+			next = s.charAt(i+1);
+			if( next == '"' || next == "'")
+				rep = "\"";
+			else if(next == "\\")
+				ret += "\\";
+			i ++;
+		}else
+			ret += c;
+	}
+	return ret;
 }
 
 /** @class TransFileGenerator */
@@ -236,10 +306,13 @@ _apply(TransFileGenerator.prototype,{
 	
 	writeTranslable: function(filename, jsonData){
 		//jsonData.result = jsonData;
-		replacer.writeFile(this.folder + '/'+ filename+".json" , JSON.stringify(jsonData, null, "  "));
+		replacer.writeFile(this.folder + '/'+ filename+".json" , JSON.stringify(jsonData, null, "  "),
+			function(){
+				
+			});
 		return jsonData;
 	},
-	
+	/** useless */
 	readTranslated: function(filepath){
 		return new Promise(function(resolve, reject){
 			readFile(filepath, function(input){
@@ -277,17 +350,48 @@ function handleError(e){
 			//}
 			throw e;
 		}
-return {
+function scanFolder(folder, config){
+	var files = fs.readdirSync(folder);
+	var promises = [], pr;
+	files.forEach(function(fname, i){
+		
+		var path = folder + ph.sep + fname;
+		var st = fs.statSync(path);
+		
+		if(fname.substring(0,1) == ".")
+			return;
+		
+		if(st.isDirectory()){
+			var sp = scanFolder(path, config);
+			sp.forEach(function(p){
+				promises.push(p);});
+		}else{
+			var scan;
+			if(path.endsWith('.html')){
+				scan = new HtmlScanner(config);
+				pr = scan.scanSingle(path);
+			}
+			else if(path.endsWith('.js')){
+				scan = new JsScanner(config);
+				pr = scan.scanSingle(path);
+			}
+			promises.push(pr);
+		}
+	});
+	return promises;
+}
+
+var exports = {
 	scanSingle:function(filepath, config){
 		Promise.from(setupConfig(config))
 		.done(function(){
-				
+				var scan;
 				if(filepath.endsWith('.html')){
-					var scan = new HtmlScanner(config);
+					scan = new HtmlScanner(config);
 					scan.scanSingle(filepath);
 				}
 				else if(filepath.endsWith('.js')){
-					var scan = new JsScanner(config);
+					scan = new JsScanner(config);
 					scan.scanSingle(filepath);
 				}
 				
@@ -304,71 +408,40 @@ return {
 			console.log(e);
 		});
 	},
-	scan: function(file){
-		var jsfile = 'test.js';
-		var htmlfile = 'test.html';
-		var srcFolder = "./test/";
-		var scan = new Scanner();
-		var trans = new TransFileGenerator("./trans");
-		var transTemp = new TransFileGenerator("./temp");
-		mkdir("./trans").then(function(){
-			return mkdir("./dist");
-		})
+	scan: function(srcdirs, config){
+		Promise.from(setupConfig(config))
 		.then(function(){
-			return scanHtml( srcFolder + htmlfile );
-		})
-		.then(function(r){
-				//console.log(JSON.stringify(r.parsed, null, '  '));
-				//console.log(" --------------------- ");
-				scan.scanHtmlTree(srcFolder +htmlfile, r.parsed, r.raw);
-				var psHtml = JSON.stringify(scan.output, null, '  ');
-				//replacer.writeFile("./scan-result/"+ htmlfile +"-replace.json", psHtml);
-				console.log(psHtml);
-				//replacer.replace(scan.output, r.raw, "./dist/");
-				trans.writeTranslable(htmlfile, scan.output);
-				return scanJs(srcFolder +jsfile);
-			} , handleError
-		)
-		.done(function(r){
-			var psJs = JSON.stringify(r.trans, null, '  ');
-			transTemp.writeTranslable(jsfile, r.temp);
-			console.log("-----JS file meta data: -----\n"+ psJs);
-			trans.writeTranslable(jsfile, r.trans);
-			console.log("----- end of test ------");
-		}, handleError);
+			var dirs = srcdirs instanceof Array ? srcdirs : [srcdirs];
+			reporter.begin();
+			var prs = [];
+			srcdirs.forEach(function(folder){
+				prs.push(scanFolder(folder, config));
+			});
+			return Promise.all(prs);
+		}, function(e){
+			console.log(e);
+			throw e;
+		}).done(function(){
+		});
 	},
 	
-	replace:function(folder){
-		if(!folder)
-			folder = "./trans";
-		mkdir("./dist").then(function(){
-			return mkdir("./dist");
-		}).then(function(){
-			var files = fs.readdirSync(folder);
-			console.log("   "+ files);
-			files.forEach(function(filename, i){
-				if(filename.substring(filename.length - ".js.json".length) ==  ".js.json"){
-					return;
-				}
-				var tranDataFile = folder + "/" + filename;
-				console.log(filename);
-				stutil.readFile(tranDataFile, function(tstr){
-						
-						//console.log(tstr); 
-						var tranData = JSON.parse(tstr);
-						//eval("tranData="+ tstr);
-					replacer.replace(tranData, "./dist/");
-				});
+	replace:function(config){
+		Promise.from(setupConfig(config))
+		.then(function(){
+			var files = fs.readdirSync(config.trans);
+			files.forEach(function(file){
+					replacer.replace(config.dist, ph.join(config.trans, file));
 			});
-		}).done(function(){}, function(e){
+		}).done(null, function(e){
 			console.log(e);
 			throw e;
 		});
-		
 	},
 	
 	setup: setupConfig
 };
+
+return exports;
 
 })();
 

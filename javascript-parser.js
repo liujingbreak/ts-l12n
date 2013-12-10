@@ -154,6 +154,7 @@ module.exports = (function() {
               };
             },
         peg$c111 = function(value) {
+          	//console.log("in parser "+ text());
               return {
                 type:  "StringLiteral",
                 value: unQuote(text()),
@@ -500,7 +501,7 @@ module.exports = (function() {
               			text: head.value,
               			line:line(),
               			column: column(),
-              			offset: offset(),
+              			offset: offset() ,
               			end:  head.end
               			
               		};
@@ -522,8 +523,10 @@ module.exports = (function() {
         						ts.end = el[3].end;
         					}
               				}else{
-              					ts_found(ts);
+              					if(ts)
+              						ts_found(ts);
               					ts = null;
+              					
               				}
         			});
         		 }
@@ -14999,6 +15002,7 @@ module.exports = (function() {
 
     	var tsdata = [];
     	function ts_found(o){
+    		//console.log( o);
     		tsdata.push(o);
     	}
     	function unQuote(s){

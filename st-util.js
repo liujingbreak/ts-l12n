@@ -1,5 +1,6 @@
 var fs = require("fs");
 var util = require("util");
+var ph = require('path');
 
 function readFile(filePath, callback){
 	var inputStream = fs.createReadStream(filePath);
@@ -32,9 +33,7 @@ module.exports = {
 		return r;
 	},
 	fileName: function (path){
-		var p = path.lastIndexOf("/");
-		if(p < 0 )
-			p = path.lastIndexOf("\\");
+		var p = path.lastIndexOf(ph.sep);
 		if(p < 0)
 			return path;
 		return path.substring(p + 1);

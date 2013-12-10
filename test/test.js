@@ -10,12 +10,12 @@ publicProfile.directive('fittext', ['$timeout', function($timeout) {
     },
     restrict: 'C',
     transclude: true,
-    template: '<div ng-transclude class="textContainer t" ng-bind="text">JUST FOR TEST 1 </div>' +
+    template: "<div ng-transclude class='textContainer t' ng-bind=\"text\">JUST \nFOR TEST 1 </div>" +
     	"more string  "
-    	+ ' <span class="t"> JUST FOR ' 
+    	+ ' <span class="t">JUST FOR ' 
     	+ 'TEST 2</span> '
-    	+ nothing + " <span class=\"t\"> JUST FOR TEST 3 </span> "
-    	,
+    	+ nothing + ' <span class="t">JUST FOR TEST 3</span> ',
+    	
     controller: function($scope, $element, $attrs) {
       var maxFontSize = $scope.maxFontSize || 50;
       var minFontSize = $scope.minFontSize || 8;

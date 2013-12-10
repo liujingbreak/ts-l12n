@@ -19,29 +19,25 @@ module.exports = (function(){
 			out.end(callback);
 	}
 	
-	function _repText(sText, meta){
+	function _repText(sText, meta, isStringLit){
 		var wOffset = 0, dist = "";
-		//console.log("sorted :\n" + JSON.stringify(sorted, null, "  "));
 		
 		meta.forEach(function(el, i){
 			dist += sText.substring(wOffset, el.offset);
-			dist += el.text;
+			dist += isStringLit? JSON.stringify(el.text) : el.text;
 			wOffset = el.end;
 		});
-		//console.log(wOffset + "/"+ sText.length);
 		if(wOffset < sText.length){
-			//console.log(wOffset);
-			//console.log("---------\n" + sText.substring(wOffset));
 			dist += sText.substring(wOffset);
 		}
 		return dist;
 	}
 	
-	function repFile(sFile, meta){
+	function repFile(sFile, meta, isStringLit){
 		return new Promise(function(resolve, rej){
 			stutil.readFile(sFile, function(src){
-				console.log("\n----------------------\n\t(/ - ,-)/ replacing "+ sFile);
-				var dist = _repText(src, meta);
+				console.log("  (/ - ,-)/ replacing "+ sFile);
+				var dist = _repText(src, meta, isStringLit);
 				resolve(dist);
 			});
 		});
@@ -67,9 +63,9 @@ module.exports = (function(){
 				jsLitMeta.result.forEach(function(el, i){
 						el.text = _repText(el.text, _transdata[i]);
 				});
-				console.log(JSON.stringify(jsLitMeta, null, "  "));
+				//console.log(JSON.stringify(jsLitMeta, null, "  "));
 				var dist = null;
-				repFile(jsLitMeta.srcFile, jsLitMeta.result).then(
+				repFile(jsLitMeta.srcFile, jsLitMeta.result, true).then(
 					function(disttext){
 						writeFile(distFolder + "/"+ fileName(jsLitMeta.srcFile), disttext);
 					});
@@ -117,7 +113,7 @@ module.exports = (function(){
 		
 		_replace: function (tranData, distFolder){
 			stutil.readFile(tranData.srcFile, function(src){
-				console.log("\n----------------------\n\t(/ - ,-)/ replacing "+ tranData.srcFile);
+				//console.log("\n----------------------\n\t(/ - ,-)/ replacing "+ tranData.srcFile);
 				var dist = repText(src, tranData.result);
 				/* var wOffset = 0, dist = "";
 				//console.log("sorted :\n" + JSON.stringify(sorted, null, "  "));
