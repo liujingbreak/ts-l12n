@@ -22,18 +22,18 @@ urglify and less, run at compilation time or as a git hook.
 
 For example,
  - Having HTML file:
- ```
+```
   <i class="ts-icon-edit end t">TEST LABEL</i>
- ```
+```
 or 
- ```html
-<div class="_textual t">
-      <div class="_textual t">
-      		<ul>
-      			<li>TEST
-      		</ul>
-      </div>
- </div>
+```
+ <div class="_textual t">
+ 	<div>
+              <ul>
+              		<li>TEST
+              	</ul>
+        </div>
+  </div>
 ```
 Scanner use HTML parser to look for tags whose class name contain "t", generates translatable file
 ```js
@@ -74,7 +74,7 @@ Scanner use HTML parser to look for tags whose class name contain "t", generates
 ```
 	Scanner leverages Javascript parser (in PoC, I use PEGJS) to parse javascript file, filters out `String literal`,
 	again HTML parser wiil scan those `String literal` and looks for HTML like string which contains HTML elment,
-	generates translatable file:
+	generates translatable json file:
 	
 	```js
 	{
@@ -109,7 +109,42 @@ Scanner use HTML parser to look for tags whose class name contain "t", generates
 	}
 	```
 	
+ - Manually replace those "text" with different language, here we pretent this is done by a Tranlate App.
+  The final replaced files will be like:
+```
+<div class="actions">
+          ...
+            <span class="test0 t test">中文主页</span>
+            <i class="ts-icon-edit end t">这是标签</i>
+          </button>
+          
+          <form>
+          <fieldset class="uniform">
+            <p>
+              <div class="_textual t">
+              		<div><ul>
+              			<li>测试
+              		</div></ul>
+              </div>
+            </p>
+          </fieldset>
+        ...
+```
 
+```
+...
+  return {
+    scope: {
+      minFontSize: '@',
+      maxFontSize: '@',
+      text: '='
+    },
+    restrict: 'C',
+    transclude: true,
+    template: "<div ng-transclude class='textContainer t' ng-bind=\"text\">测试一</div>more string   <span class=\"t\">测试二</span> "
+    	+ nothing + " <span class=\"t\">测试三</span> ",
+    ...
+```
 
 
 ## PoC implementation
