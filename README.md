@@ -21,21 +21,21 @@ urglify and less, run at compilation time or as a git hook.
 	
 
 For example,
- Having HTML file:
+ - Having HTML file:
  ```
   <i class="ts-icon-edit end t">TEST LABEL</i>
  ```
-or
- ```
+or 
+ ```html
 <div class="_textual t">
-                <div class="_textual t">
-              		<ul>
-              			<li>TEST
-              		</ul>
-              </div>
-              </div>
+      <div class="_textual t">
+      		<ul>
+      			<li>TEST
+      		</ul>
+      </div>
+ </div>
 ```
-Scanner looks for tags whose class name contains "t", generates translatable file
+Scanner use HTML parser to look for tags whose class name contain "t", generates translatable file
 ```js
 [
 {
@@ -55,8 +55,60 @@ Scanner looks for tags whose class name contains "t", generates translatable fil
 ]
 ```
 
-Having Javascript file 
-
+- Having Javascript file 
+```js
+	directive('fittext', [ function($timeout) {
+  ...
+  return {
+    scope: {
+      minFontSize: '@',
+      maxFontSize: '@',
+      text: '='
+    },
+    template: "<div ng-transclude class='textContainer t' ng-bind=\"text\">JUST \nFOR TEST 1 </div>" +
+    	"more string  "
+    	+ ' <span class="t">JUST FOR ' 
+    	+ 'TEST 2</span> '
+    	+ nothing + ' <span class="t">JUST FOR TEST 3</span> ',
+    	...
+```
+	Scanner leverages Javascript parser (in PoC, I use PEGJS) to parse javascript file, filters out `String literal`,
+	again HTML parser wiil scan those `String literal` and looks for HTML like string which contains HTML elment,
+	generates translatable file:
+	
+	```js
+	{
+	  "file": "test/test.js",
+	  "result": [
+		{
+		  "tag": "div",
+		  "offset": 58,
+		  "end": 75,
+		  "line": 13,
+		  "text": "JUST \nFOR TEST 1 ",
+		  "jslit_idx": 0
+		},
+		{
+		  "tag": "span",
+		  "offset": 111,
+		  "end": 126,
+		  "line": 14,
+		  "text": "JUST FOR TEST 2",
+		  "jslit_idx": 0
+		},
+		{
+		  "tag": "span",
+		  "offset": 17,
+		  "end": 32,
+		  "line": 17,
+		  "text": "JUST FOR TEST 3",
+		  "jslit_idx": 1
+		}
+	  ],
+	  "srcFile": "./temp/test-test.js-jslit.json"
+	}
+	```
+	
 
 
 
