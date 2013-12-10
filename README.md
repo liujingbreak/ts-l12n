@@ -2,7 +2,7 @@ PoC of AngularJS based i18n text resource tool
 --------------
 
 This PoC is for server side i18n text resource solution.
-Focusing on proove feasibility of making a smart tool for Text parsing, fetching, replacing, translation at compilation time.
+Focusing on proving feasibility of making a smart tool for Text parsing, fetching, replacing, translation at compilation time.
 
 ## In general
 
